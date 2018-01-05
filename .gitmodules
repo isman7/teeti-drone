@@ -1,0 +1,3 @@
+[submodule "gyro/firmwares/teeti-MPU9250-firmware"]
+	path = gyro/firmwares/teeti-MPU9250-firmware
+	url = git@github.com:unibarcelona/teeti-MPU9250-firmware.git

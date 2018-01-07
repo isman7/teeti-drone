@@ -1,9 +1,11 @@
 from __future__ import print_function
 import os
 import configparser as cfgp
-from platformio.commands.run import cli
+from platformio.commands.run import cli as run_cli
+from platformio.commands.device import cli as device_cli
 import pprint
 import StringIO
+import json
 from click.testing import CliRunner
 
 submodule_path = os.path.dirname(__file__)
@@ -20,16 +22,25 @@ class Board(object):
             self.firmware_path = os.path.join(module_path, "firmwares", self.firmware)
         print(self.firmware_path)
         self.env_parser = cfgp.ConfigParser()
-        self.pio_cli = cli
 
-        INI_FILE_PATH = os.path.join(self.firmware_path, "platformio.ini")
 
-        if os.path.isfile(INI_FILE_PATH):
-            with open(INI_FILE_PATH, "r") as pio_ini:
+        config_file_path = os.path.join(self.firmware_path, "platformio.ini")
+
+        if os.path.isfile(config_file_path):
+            with open(config_file_path, "r") as pio_ini:
                 self.env_parser.read_file(pio_ini)
 
         else:
-            print("No platformio.ini file found, upoload will fail.")
+            raise Exception("No platformio.ini file found, upoload will fail.")
+
+        self.run_cli = run_cli
+        self.device_cli = device_cli
+        self.runner = CliRunner()
+        # self.runner_result = None
+
+        self.runner_result = self.runner.invoke(self.device_cli, ["list", "--json-output"])
+        devices_json = json.loads(self.runner_result.output)
+        self.upload_port = devices_json[0]["port"]
 
     def __repr__(self):
         properties_dict = {key: dict(item) for key, item in dict(self.env_parser).items()}
@@ -38,17 +49,21 @@ class Board(object):
         pretty_printer = pprint.PrettyPrinter(indent=4, stream=repr_stream)
         pretty_printer.pprint(properties_dict)
         repr_stream.seek(0)
-        return "Board with build project: \n" + repr_stream.read()
+        return "Board with build project: \n" + \
+               repr_stream.read() + "\n" + \
+               "Auto-detected port: " + self.upload_port
 
     def upload(self):
 
         CURRENT_PATH = os.path.abspath(os.curdir)
         os.chdir(self.firmware_path)
+
         # TODO find what Python is CliRunner using.
-        runner = CliRunner()
-        result = runner.invoke(self.pio_cli, ["--target", 'upload'])
-        print(result.output)
+        self.runner_result = self.runner.invoke(self.run_cli, ["--target", 'upload'])
+        print(self.runner_result.output)
+
         os.chdir(CURRENT_PATH)
+
 
 
 

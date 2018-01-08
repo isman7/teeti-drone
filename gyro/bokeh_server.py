@@ -23,32 +23,35 @@ board.upload()
 board.connect()
 
 
-def modify_doc(doc):
-    plt_1 = figure(plot_width=400, plot_height=400)
-    plt_2 = figure(plot_width=400, plot_height=400)
-    plt_3 = figure(plot_width=400, plot_height=400)
+def gyro_bokeh_handler_function(bokeh_document):
+    plt_acc_x = figure(plot_width=400, plot_height=400)
+    plt_acc_y = figure(plot_width=400, plot_height=400)
+    plt_acc_z = figure(plot_width=400, plot_height=400)
 
-    r1 = plt_1.line(np.arange(100), np.zeros(100), color="firebrick", line_width=2)
-    plt_1.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-    plt_1.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+    line_acc_x = plt_acc_x.line(np.arange(100), np.zeros(100), color="firebrick", line_width=2)
+    plt_acc_x.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
+    plt_acc_x.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
 
-    r2 = plt_2.line(np.arange(100), np.zeros(100), color="navy", line_width=2)
-    plt_2.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-    plt_2.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+    line_acc_y = plt_acc_y.line(np.arange(100), np.zeros(100), color="navy", line_width=2)
+    plt_acc_y.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
+    plt_acc_y.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
 
-    r3 = plt_3.line(np.arange(100), np.zeros(100), color="green", line_width=2)
-    plt_3.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-    plt_3.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+    line_acc_z = plt_acc_z.line(np.arange(100), np.zeros(100), color="green", line_width=2)
+    plt_acc_z.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
+    plt_acc_z.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
 
-    ds1 = r1.data_source
-    ds2 = r2.data_source
-    ds3 = r3.data_source
+    ds_acc_x = line_acc_x.data_source
+    ds_acc_y = line_acc_y.data_source
+    ds_acc_z = line_acc_z.data_source
 
-    window_size = 5
+    # window_size = 5
 
     # slider = Slider(start=0, end=25, value=window_size, step=1)
     #
     # doc.add_root(column(slider, the_plot))
+
+    grid = gridplot([[plt_acc_x, plt_acc_y, plt_acc_z]])
+    bokeh_document.add_root(grid)
 
     @count()
     def update(t):
@@ -57,21 +60,20 @@ def modify_doc(doc):
 
         # z = pd.Series.rolling(updated_dataframe["acc"]["z"], window=slider.value).mean()
 
-        ds1.data['y'] = np.array(updated_dataframe["acc"]["x"])
-        ds2.data['y'] = np.array(updated_dataframe["acc"]["y"])
-        ds3.data['y'] = np.array(updated_dataframe["acc"]["z"])
+        ds_acc_x.data['y'] = np.array(updated_dataframe["acc"]["x"])
+        ds_acc_y.data['y'] = np.array(updated_dataframe["acc"]["y"])
+        ds_acc_z.data['y'] = np.array(updated_dataframe["acc"]["z"])
 
-        ds1.trigger('data', ds1.data, ds1.data)
-        ds2.trigger('data', ds2.data, ds2.data)
-        ds3.trigger('data', ds3.data, ds3.data)
+        ds_acc_x.trigger('data', ds_acc_x.data, ds_acc_x.data)
+        ds_acc_y.trigger('data', ds_acc_y.data, ds_acc_y.data)
+        ds_acc_z.trigger('data', ds_acc_z.data, ds_acc_z.data)
 
-    grid = gridplot([[plt_1, plt_2, plt_3]])
-    doc.add_root(grid)
+
 
     # Add a periodic callback to be run every 500 milliseconds
-    doc.add_periodic_callback(update, 100)
+    bokeh_document.add_periodic_callback(update, 100)
 
-bokeh_app = Application(FunctionHandler(modify_doc))
+bokeh_app = Application(FunctionHandler(gyro_bokeh_handler_function))
 
 server = Server({'/': bokeh_app}, io_loop=io_loop)
 server.start()

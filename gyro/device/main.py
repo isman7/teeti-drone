@@ -6,6 +6,8 @@ from platformio.commands.device import cli as device_cli
 import pprint
 import StringIO
 import json
+import serial
+import numpy as np
 from click.testing import CliRunner
 
 submodule_path = os.path.dirname(__file__)
@@ -42,6 +44,10 @@ class Board(object):
         devices_json = json.loads(self.runner_result.output)
         self.upload_port = devices_json[0]["port"]
 
+        self.com = None
+        self.log_buffer = ""
+        self.z = np.zeros(100, dtype=float)
+
     def __repr__(self):
         properties_dict = {key: dict(item) for key, item in dict(self.env_parser).items()}
         # TODO custom better pretty print fuction...
@@ -64,6 +70,30 @@ class Board(object):
 
         os.chdir(CURRENT_PATH)
 
+    def connect(self, **kwargs):
+        com_port = kwargs.pop("com_port", self.upload_port)
+        try:
+            self.com = serial.Serial(com_port, 38400)
+            # self.com.open()
+        except IOError as e:
+            self.com = None
+            print("Not able to connect, please specify manually a com port. Exception: {}".format(e))
 
+    def read_z(self):
+        this_line = self.com.readline()
+        # this_line = this_line.decode('utf-8')
+        try:
+            if self.log_buffer:
+                print(self.log_buffer)
+                self.log_buffer = ""
+            json_from_serial = json.loads(this_line)
+            print(json_from_serial)
 
+            self.z = np.roll(self.z, 1)
+            self.z[0] = json_from_serial["acc"]["z"]
 
+        except ValueError:
+            if this_line is not "\n":
+                self.log_buffer += this_line.replace("\n", "")
+
+        return self.z[::-1]

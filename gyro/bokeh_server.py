@@ -7,43 +7,43 @@ from bokeh.server.server import Server
 from bokeh.models import Slider
 from bokeh.plotting import figure
 from bokeh.driving import count
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, column
 
 import numpy as np
 import pandas as pd
 from gyro.device import Board
 
 
-io_loop = IOLoop.current()
-
-board = Board(firmware="teeti-MPU9250-firmware")
-print(board)
-# board.upload()
-
-board.connect()
-
-
 class GyroHandler(Handler):
     def __init__(self):
         super(GyroHandler, self).__init__()
 
+        self.board = Board(firmware="teeti-MPU9250-firmware")
+        print(self.board)
+        # board.upload()
+
+        self.board.connect()
+
     def modify_document(self, doc):
 
-        plt_acc_x = figure(plot_width=400, plot_height=400)
-        plt_acc_y = figure(plot_width=400, plot_height=400)
-        plt_acc_z = figure(plot_width=400, plot_height=400)
+        plt_acc_x = figure(plot_width=400, plot_height=400, title="X-axis",
+                           y_axis_label='G', x_axis_label='ms')
+        plt_acc_y = figure(plot_width=400, plot_height=400, title="Y-axis",
+                           y_axis_label='G', x_axis_label='ms')
+        plt_acc_z = figure(plot_width=400, plot_height=400, title="Z-axis",
+                           y_axis_label='G', x_axis_label='ms')
 
-        line_acc_x = plt_acc_x.line(np.arange(100), np.zeros(100), color="firebrick", line_width=2)
-        plt_acc_x.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-        plt_acc_x.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+        line_acc_x = plt_acc_x.line(np.arange(100)*100, np.zeros(100), color="firebrick", line_width=2)
+        plt_acc_x.line(np.arange(100)*100, np.zeros(100) + 1, color="black", line_width=1)
+        plt_acc_x.line(np.arange(100)*100, np.zeros(100) - 1, color="black", line_width=1)
 
-        line_acc_y = plt_acc_y.line(np.arange(100), np.zeros(100), color="navy", line_width=2)
-        plt_acc_y.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-        plt_acc_y.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+        line_acc_y = plt_acc_y.line(np.arange(100)*100, np.zeros(100), color="navy", line_width=2)
+        plt_acc_y.line(np.arange(100)*100, np.zeros(100) + 1, color="black", line_width=1)
+        plt_acc_y.line(np.arange(100)*100, np.zeros(100) - 1, color="black", line_width=1)
 
-        line_acc_z = plt_acc_z.line(np.arange(100), np.zeros(100), color="green", line_width=2)
-        plt_acc_z.line(np.arange(100), np.zeros(100) + 1, color="black", line_width=1)
-        plt_acc_z.line(np.arange(100), np.zeros(100) - 1, color="black", line_width=1)
+        line_acc_z = plt_acc_z.line(np.arange(100)*100, np.zeros(100), color="green", line_width=2)
+        plt_acc_z.line(np.arange(100)*100, np.zeros(100) + 1, color="black", line_width=1)
+        plt_acc_z.line(np.arange(100)*100, np.zeros(100) - 1, color="black", line_width=1)
 
         ds_acc_x = line_acc_x.data_source
         ds_acc_y = line_acc_y.data_source
@@ -55,13 +55,12 @@ class GyroHandler(Handler):
         #
         # doc.add_root(column(slider, the_plot))
 
-        grid = gridplot([[plt_acc_x, plt_acc_y, plt_acc_z]])
+        grid = gridplot([[plt_acc_x, plt_acc_y, plt_acc_z]], responsive=True)
         doc.add_root(grid)
 
-        @count()
-        def update(t):
+        def update():
 
-            updated_dataframe = board.read()
+            updated_dataframe = self.board.read()
 
             # z = pd.Series.rolling(updated_dataframe["acc"]["z"], window=slider.value).mean()
 
@@ -75,6 +74,8 @@ class GyroHandler(Handler):
 
         # Add a periodic callback to be run every 500 milliseconds
         doc.add_periodic_callback(update, 100)
+
+io_loop = IOLoop.current()
 
 bokeh_app = Application(GyroHandler())
 

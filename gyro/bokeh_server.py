@@ -32,7 +32,9 @@ def modify_doc(doc):
     @count()
     def update(t):
 
-        ds1.data['y'] = board.read_z()
+        updated_dataframe = board.read()
+
+        ds1.data['y'] = np.array(updated_dataframe["acc"]["z"])
         # ds1.data['y'].append(random.randint(0,100))
         # ds2.data['x'].append(step)
         # ds2.data['y'].append(random.randint(0,100))

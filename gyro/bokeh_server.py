@@ -7,7 +7,7 @@ from bokeh.server.server import Server
 from bokeh.models import Slider
 from bokeh.plotting import figure
 from bokeh.driving import count
-from bokeh.layouts import row
+from bokeh.layouts import gridplot
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ io_loop = IOLoop.current()
 
 board = Board(firmware="teeti-MPU9250-firmware")
 print(board)
-# board.upload()
+board.upload()
 
 board.connect()
 
@@ -65,7 +65,8 @@ def modify_doc(doc):
         ds2.trigger('data', ds2.data, ds2.data)
         ds3.trigger('data', ds3.data, ds3.data)
 
-    doc.add_root(row(plt_1, plt_2, plt_3))
+    grid = gridplot([[plt_1, plt_2, plt_3]])
+    doc.add_root(grid)
 
     # Add a periodic callback to be run every 500 milliseconds
     doc.add_periodic_callback(update, 100)

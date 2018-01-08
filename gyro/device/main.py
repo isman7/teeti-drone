@@ -14,6 +14,30 @@ submodule_path = os.path.dirname(__file__)
 module_path = os.path.dirname(submodule_path)
 abs_path = os.path.dirname(module_path)
 
+BOARD_LOG_TMP = """
+Board report
+============
+{}
+============
+"""
+
+BOARD_PROP_TMP = """
+Board properties
+================
+Board with build project:
+{}
+
+Auto-detected port: {}
+================
+"""
+
+PIO_LOG_TMP = """
+PlatformIO report
+=================
+{}
+=================
+"""
+
 
 class Board(object):
     def __init__(self, **kwargs):
@@ -55,9 +79,7 @@ class Board(object):
         pretty_printer = pprint.PrettyPrinter(indent=4, stream=repr_stream)
         pretty_printer.pprint(properties_dict)
         repr_stream.seek(0)
-        return "Board with build project: \n" + \
-               repr_stream.read() + "\n" + \
-               "Auto-detected port: " + self.upload_port
+        return BOARD_PROP_TMP.format(repr_stream.read(), self.upload_port)
 
     def upload(self):
 
@@ -66,7 +88,7 @@ class Board(object):
 
         # TODO find what Python is CliRunner using.
         self.runner_result = self.runner.invoke(self.run_cli, ["--target", 'upload'])
-        print(self.runner_result.output)
+        print(PIO_LOG_TMP.format(self.runner_result.output))
 
         os.chdir(CURRENT_PATH)
 
@@ -83,17 +105,20 @@ class Board(object):
         this_line = self.com.readline()
         # this_line = this_line.decode('utf-8')
         try:
-            if self.log_buffer:
-                print(self.log_buffer)
-                self.log_buffer = ""
+
             json_from_serial = json.loads(this_line)
-            print(json_from_serial)
 
             self.z = np.roll(self.z, 1)
             self.z[0] = json_from_serial["acc"]["z"]
 
+            if self.log_buffer:
+                log_output = BOARD_LOG_TMP.format(self.log_buffer)
+                print(log_output)
+                self.log_buffer = ""
+
+            print(json_from_serial)
+
         except ValueError:
-            if this_line is not "\n":
-                self.log_buffer += this_line.replace("\n", "")
+            self.log_buffer += this_line
 
         return self.z[::-1]
